@@ -10,8 +10,16 @@
 
 OpenVPN server in a Docker container complete with an EasyRSA PKI CA.
 
-Extensively tested on [Digital Ocean $5/mo node](http://bit.ly/1C7cKr3) and has
-a corresponding [Digital Ocean Community Tutorial](http://bit.ly/1AGUZkq).
+默认openvpn.conf推送路由有bug
+错误内容是：
+route 192.168.254.0 255.255.255.0
+修复为：
+route 192.168.254.0 255.255.255.0
+push "route 192.168.254.0 255.255.255.0"
+
+客户端配置如果不需要全局nat，请redirect-gateway def1
+
+by:sk
 
 #### Upstream Links
 
@@ -37,7 +45,8 @@ a corresponding [Digital Ocean Community Tutorial](http://bit.ly/1AGUZkq).
 
 * Start OpenVPN server process
 
-      docker run -v $OVPN_DATA:/etc/openvpn -d -p 1194:1194/udp --cap-add=NET_ADMIN kylemanna/openvpn
+      docker run --privileged=true -v $OVPN_DATA:/etc/openvpn -d -p 1194:1194/udp --net=host kylemanna/openvpn
+      在多个vpc之间穿梭需要--net=host以及privileged权限
 
 * Generate a client certificate without a passphrase
 
@@ -75,12 +84,6 @@ If you prefer to use `docker-compose` please refer to the [documentation](docs/d
 * Test using a client that has openvpn installed correctly
 
         $ openvpn --config CLIENTNAME.ovpn
-
-* Run through a barrage of debugging checks on the client if things don't just work
-
-        $ ping 8.8.8.8    # checks connectivity without touching name resolution
-        $ dig google.com  # won't use the search directives in resolv.conf
-        $ nslookup google.com # will use search
 
 * Consider setting up a [systemd service](/docs/systemd.md) for automatic
   start-up at boot time and restart in the event the OpenVPN daemon or Docker
